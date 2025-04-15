@@ -3,6 +3,7 @@ from einops.layers.torch import Rearrange
 import numpy as np
 import torch
 import torch.nn as nn
+from typing import Optional
 
 from flash_perceiver import utils
 from flash_perceiver.utils.encodings import BasePositionalEncoding
@@ -27,11 +28,11 @@ class ImageAdapter(nn.Module):
     """
     def __init__(
         self,
-        embed_dim: int,
         num_channels: int = 3,
         pos_encoding: BasePositionalEncoding | None = None,
         patch_size: int | tuple[int, int ] | None = None,
-        channel_first: bool = True
+        channel_first: bool = True,
+        embed_dim: Optional[int] = None,
     ):
         super().__init__()
 
@@ -40,7 +41,6 @@ class ImageAdapter(nn.Module):
         self.patch_size = patch_size
         self.pos_encoding = pos_encoding
         self.channel_first = channel_first
-
         if patch_size is not None:
             if isinstance(patch_size, int):
                 patch_size = (patch_size, patch_size)
@@ -58,11 +58,14 @@ class ImageAdapter(nn.Module):
         if pos_encoding is not None:
             self.patch_dim += pos_encoding.out_dim
 
-        self.proj = nn.Sequential(
-            nn.LayerNorm(self.patch_dim),
-            nn.Linear(self.patch_dim, embed_dim),
-            nn.LayerNorm(embed_dim),
-        )
+        if embed_dim is not None:
+            self.proj = nn.Sequential(
+                nn.LayerNorm(self.patch_dim),
+                nn.Linear(self.patch_dim, embed_dim),
+                nn.LayerNorm(embed_dim),
+            )
+        else:
+            self.proj = None
 
         self.pos_grid = None
 
@@ -94,7 +97,8 @@ class ImageAdapter(nn.Module):
             pos_grid = self.get_pos_grid(x)
             x = torch.cat([x, self.pos_encoding(pos_grid)], dim=-1)
 
-        x = self.proj(x)
+        if self.proj is not None:
+            x = self.proj(x)
         x = rearrange(x, 'b h w c -> b (h w) c')
         
         return x

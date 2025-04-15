@@ -168,7 +168,7 @@ class PerceiverBase(nn.Module):
         self.latent_heads = 8
         self.latent_head_dim = 64
         self.depth = depth
-        self.self_per_cross_attn = self_per_cross_attn
+        self.self_per_cross_attn = self_per_cross_attn # number of self attention layers in the Transformer
         self.use_flash_attn = use_flash_attn
 
         if self.num_latents is not None:
@@ -212,13 +212,14 @@ class PerceiverBase(nn.Module):
             mlp_cls=self.mlp_cls
         )
 
+        # caching for weight sharing
         get_cross_attn_block, get_self_attn_block = map(cache_fn, (get_cross_attn_block, get_self_attn_block))
 
         self.layers = nn.ModuleList([])
         self.zero_tokens = nn.ParameterList([])
 
         for i, in_dim in enumerate(self.input_dims):
-            should_cache = i > 0 and weight_tie_layers
+            should_cache = i > 0 and weight_tie_layers # keep the weights but not for the first iteration
             cache_args = {'_cache': should_cache}
 
             self_attns = nn.ModuleList([])
@@ -231,6 +232,8 @@ class PerceiverBase(nn.Module):
                 self_attns,
             ]))
 
+            # Optionally creates additional tokens (as parameters) to prepend to the input.
+            # Extra feature: DeepMind doesn't mention it in paper or code
             if num_zero_tokens:
                 zero_tokens = nn.Parameter(torch.randn(num_zero_tokens, in_dim))
             else:
@@ -238,6 +241,8 @@ class PerceiverBase(nn.Module):
 
             self.zero_tokens.append(zero_tokens)
 
+        # this is a form of dropout, it drops latent tokens with some probability
+        # Extra feature: DeepMind doesn't mention it in paper or code
         self.latent_drop = TokenDrop(latent_drop)
 
 
@@ -485,7 +490,7 @@ class Perceiver(PerceiverBase):
         latent_attn_dropout: float = 0.0,
         latent_drop: float = 0.0,
         weight_tie_layers: bool = False,
-        gated_mlp: bool = True,
+        gated_mlp: bool = True, # Set it as false for a start, it is not mentioned anywhere in the paper or DeepMind's work
         self_per_cross_attn: int = 1,
         num_zero_tokens: int | None = None,
         use_flash_attn: bool = True,
