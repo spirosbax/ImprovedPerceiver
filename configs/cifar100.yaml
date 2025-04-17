@@ -1,0 +1,64 @@
+# CIFAR-100 Perceiver Configuration
+
+# Model Architecture
+model:
+  input_dim: 37
+  depth: 1
+  output_dim: 100
+  num_latents: 256
+  latent_dim: 256
+  cross_heads: 1
+  cross_head_dim: 64
+  cross_rotary_emb_dim: 0
+  cross_attn_dropout: 0.1
+  latent_heads: 8
+  latent_head_dim: 64
+  latent_rotary_emb_dim: 0
+  latent_attn_dropout: 0.1
+  latent_drop: 0.1
+  weight_tie_layers: true
+  gated_mlp: false
+  self_per_cross_attn: 6
+  output_mode: "average"
+  num_zero_tokens: null
+  use_flash_attn: true
+
+# Positional Encoding
+pos_encoding:
+  bands: 8
+  dims: 2
+  max_res: 32
+
+# Training Parameters
+training:
+  lr: 0.0005
+  weight_decay: 0.001
+  batch_size: 1024
+  epochs: 400
+  device: "cuda"
+  data_root: "../data"
+  # Save checkpoint every N epochs (0 to disable)
+  checkpoint_interval: 50
+
+# Data Augmentation
+augmentation:
+  use_randaug: true
+  randaug_n: 1
+  randaug_m: 5
+
+# Learning Rate Scheduler
+scheduler:
+  type: "step"
+  warmup_steps: 1000
+  # Step scheduler parameters
+  step_milestones: [4000, 11000]
+  step_gamma: 0.5
+  # Cosine scheduler parameters
+  plateau_steps: 3000
+  min_lr_ratio: 0.1
+  restart_steps: 500
+
+# Logging
+logging:
+  use_tensorboard: true
+  logdir: "../logs" 
