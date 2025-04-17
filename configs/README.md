@@ -51,6 +51,14 @@ training:
   checkpoint_interval: 50     # Save checkpoint every N epochs (0 to disable)
 ```
 
+### Optimizer Configuration
+```yaml
+optimizer:
+  type: "adamw"               # Optimizer type: "lamb" (default) or "adamw"
+  betas: [0.9, 0.999]         # Beta coefficients for AdamW (only used for adamw)
+  eps: 1.0e-8                 # Epsilon value for numerical stability (only used for adamw)
+```
+
 ### Data Augmentation
 ```yaml
 augmentation:

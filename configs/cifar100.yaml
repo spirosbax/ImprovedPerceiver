@@ -1,12 +1,13 @@
 # CIFAR-100 Perceiver Configuration
+device: "cuda"
 
 # Model Architecture
 model:
   input_dim: 37
-  depth: 1
+  depth: 8
   output_dim: 100
   num_latents: 256
-  latent_dim: 256
+  latent_dim: 384
   cross_heads: 1
   cross_head_dim: 64
   cross_rotary_emb_dim: 0
@@ -18,7 +19,7 @@ model:
   latent_drop: 0.1
   weight_tie_layers: true
   gated_mlp: false
-  self_per_cross_attn: 6
+  self_per_cross_attn: 5
   output_mode: "average"
   num_zero_tokens: null
   use_flash_attn: true
@@ -31,34 +32,46 @@ pos_encoding:
 
 # Training Parameters
 training:
-  lr: 0.0005
-  weight_decay: 0.001
-  batch_size: 1024
-  epochs: 400
-  device: "cuda"
+  lr: 0.004
+  weight_decay: 0.3
+  batch_size: 128
+  gradient_accumulation_steps: 8
+  epochs: 300
   data_root: "../data"
-  # Save checkpoint every N epochs (0 to disable)
-  checkpoint_interval: 50
+  checkpoint_interval: 10  # Save checkpoints every N epochs
+  num_workers: 4
+
+# Optimizer Configuration
+optimizer:
+  type: "adamw"
+  betas: [0.9, 0.95]
+  eps: 1.0e-8
 
 # Data Augmentation
 augmentation:
-  use_randaug: true
-  randaug_n: 1
-  randaug_m: 5
+  # Options: 'standard', 'randaug', 'moco'
+  type: "moco"  # MoCo-style augmentation
+  # MoCo augmentation parameters
+  resize_scale: [0.2, 1.0]  # Scale range for RandomResizedCrop
+  grayscale_p: 0.2  # Probability for RandomGrayscale
+  jitter_brightness: 0.4  # ColorJitter brightness
+  jitter_contrast: 0.4  # ColorJitter contrast
+  jitter_saturation: 0.4  # ColorJitter saturation
+  jitter_hue: 0.4  # ColorJitter hue
+  # RandAugment parameters (used only if type is 'randaug')
+  # randaug_n: 2  # Number of augmentations to apply
+  # randaug_m: 10  # Magnitude of augmentations
 
 # Learning Rate Scheduler
 scheduler:
-  type: "step"
-  warmup_steps: 1000
-  # Step scheduler parameters
-  step_milestones: [4000, 11000]
-  step_gamma: 0.5
-  # Cosine scheduler parameters
-  plateau_steps: 3000
-  min_lr_ratio: 0.1
-  restart_steps: 500
+  type: "cosine"
+  # For epoch-based warmup
+  # warmup_steps: null
+  warmup_epochs: 20
+  # Minimum learning rate (absolute value)
+  min_lr: 0.000001 # Use this instead of min_rl
 
 # Logging
 logging:
   use_tensorboard: true
-  logdir: "../logs" 
+  logdir: "./logs" 

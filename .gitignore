@@ -153,3 +153,9 @@ dmypy.json
 cython_debug/
 
 data/
+logs/
+out/
+logs100/
+logs10/
+configs/*.json
+*.sh
